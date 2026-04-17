@@ -463,11 +463,11 @@ export default function App() {
               <table className="stat-table">
                 <thead>
                   <tr>
-                    <th>Spelare🏃‍♂️</th>
-                    <th>Mål ⚽</th>
-                    <th>Assist 🎯</th>
-                    <th>Poäng ⚽+🎯</th>
-                    <th>Matcher📊</th>
+                    <th>Spelare</th>
+                    <th>Mål</th>
+                    <th>Assist</th>
+                    <th>Poäng</th>
+                    <th>Matcher</th>
                   </tr>
                 </thead>
                 <tbody>
