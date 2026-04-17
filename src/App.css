@@ -569,7 +569,7 @@ button,
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-width: 220px;
+  min-width: 0;
   flex: 1 1 260px;
 }
 
@@ -607,6 +607,10 @@ button,
 }
 
 @media (max-width: 720px) {
+  .app-container {
+    padding: 20px 16px 56px;
+  }
+
   .season-bar {
     flex-direction: column;
     align-items: stretch;
@@ -615,8 +619,28 @@ button,
   .hero-header {
     margin-left: -16px;
     margin-right: -16px;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding: 28px 16px 24px;
+    min-height: auto;
+  }
+
+  .panel {
+    padding: 18px;
+    min-height: auto;
+    border-radius: 20px;
+  }
+
+  .panel-heading {
+    padding: 10px 0;
+    gap: 12px;
+  }
+
+  .tab-nav {
+    width: 100%;
+  }
+
+  .tab-button {
+    flex: 1 1 calc(50% - 12px);
+    text-align: center;
   }
 
   .season-add-row,
@@ -626,10 +650,48 @@ button,
     align-items: stretch;
   }
 
+  .stat-table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 0.82rem;
+  }
+
+  .stat-table th,
+  .stat-table td {
+    padding: 10px 8px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .match-card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
   .match-player-list li {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 1.8rem;
+  }
+
+  .stat-table {
+    font-size: 0.75rem;
+  }
+
+  .stat-table th,
+  .stat-table td {
+    padding: 8px 6px;
+  }
+
+  .button,
+  .input-field {
+    min-height: 46px;
   }
 }
 
