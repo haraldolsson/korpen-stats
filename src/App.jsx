@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import MatchForm from "./MatchForm.jsx";
 import ActivePlayers from "./ActivePlayers.jsx";
 import Login from "./Login.jsx";
+import Stats from "./Stats.jsx";
+import Matches from "./Matches.jsx";
 import "./App.css";
 
 import { db } from "./firebase";
@@ -114,7 +116,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !showAdminControls && activeTab !== "stats") {
+    if (!authLoading && !showAdminControls && !["stats", "matches"].includes(activeTab)) {
       setActiveTab("stats");
     }
   }, [authLoading, showAdminControls, activeTab]);
@@ -440,6 +442,13 @@ export default function App() {
         >
           Stats
         </button>
+        <button
+          className={activeTab === "matches" ? "tab-button active" : "tab-button"}
+          type="button"
+          onClick={() => setActiveTab("matches")}
+        >
+          Matcher
+        </button>
         {showAdminControls && (
           <button
             className={activeTab === "add" ? "tab-button active" : "tab-button"}
@@ -461,75 +470,14 @@ export default function App() {
       </div>
 
       {activeTab === "stats" ? (
-        <>
-          <section className="panel">
-            <h2>Spelarstatistik</h2>
-            <div className="table-wrapper">
-              <table className="stat-table">
-                <thead>
-                  <tr>
-                    <th>Spelare</th>
-                    <th>Mål</th>
-                    <th>Assist</th>
-                    <th>Poäng</th>
-                    <th>Matcher</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedStats.map((p) => (
-                    <tr key={p.name}>
-                      <td>{p.name}</td>
-                      <td>{p.goals}</td>
-                      <td>{p.assists}</td>
-                      <td>{p.points}</td>
-                      <td>{p.matches}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section className="panel">
-            <div className="panel-heading panel-heading-center">
-              <div>
-                <h2>Matcher</h2>
-              </div>
-            </div>
-            <div className="match-list">
-              {currentMatches.map((match) => (
-                <article key={match.id} className={`match-card ${getMatchOutcome(match)}`}>
-                  <div className="match-card-header">
-                    <div>
-                      <strong>Manchester Kavaj - {match.opponent}</strong>
-                      <div className="match-date">{match.date}</div>
-                    </div>
-                    <div className="match-card-header-actions">
-                      <div className="match-score">{match.result}</div>
-                      {showAdminControls && (
-                        <button
-                          type="button"
-                          className="button button-text"
-                          onClick={() => removeMatch(match.id)}
-                        >
-                          Ta bort
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <ul className="match-player-list">
-                    {match.players.map((p, i) => (
-                      <li key={i}>
-                        <span>{p.name}</span>
-                        <span>⚽ {p.goals} | 🎯 {p.assists}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
-            </div>
-          </section>
-        </>
+        <Stats stats={sortedStats} />
+      ) : activeTab === "matches" ? (
+        <Matches
+          matches={currentMatches}
+          getMatchOutcome={getMatchOutcome}
+          showAdminControls={showAdminControls}
+          removeMatch={removeMatch}
+        />
       ) : activeTab === "add" ? (
         <MatchForm
           form={form}
