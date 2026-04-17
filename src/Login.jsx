@@ -12,7 +12,15 @@ export default function Login({
 }) {
   return (
     <section className="panel">
-      <h2>Logga in</h2>
+      <div className="panel-heading panel-heading-center">
+        <div>
+          <h2>Admin</h2>
+          <p>Logga in för att hantera matcher och spelare.</p>
+        </div>
+        <a href="/" className="button button-secondary">
+          Till stats
+        </a>
+      </div>
       {authLoading ? (
         <div className="auth-status">Kontrollerar inloggning...</div>
       ) : authUser ? (

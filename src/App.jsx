@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { matches as initialMatches } from "./data";
 import MatchForm from "./MatchForm.jsx";
 import ActivePlayers from "./ActivePlayers.jsx";
 import Login from "./Login.jsx";
@@ -11,27 +10,20 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
 export default function App() {
-  const defaultSeason = "2026";
-  const [seasons, setSeasons] = useState([defaultSeason]);
-  const [selectedSeason, setSelectedSeason] = useState(defaultSeason);
-  const [seasonData, setSeasonData] = useState(() => {
-    const names = initialMatches.flatMap((match) => match.players.map((player) => player.name));
-    const initialPlayers = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
-
-    return {
-      [defaultSeason]: {
-        matches: initialMatches,
-        players: initialPlayers
-      }
-    };
-  });
+  const [seasons, setSeasons] = useState([]);
+  const [selectedSeason, setSelectedSeason] = useState("");
+  const [seasonData, setSeasonData] = useState({});
   const [remoteLoaded, setRemoteLoaded] = useState(false);
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  const normalizedPath =
+    typeof window !== "undefined" ? window.location.pathname.replace(/\/+$/, "") || "/" : "/";
+  const isAdminRoute = normalizedPath === "/admin";
   const isAdmin = authUser?.email === "harald.billebjer@gmail.com";
+  const showAdminControls = isAdminRoute && isAdmin;
   const [newSeasonName, setNewSeasonName] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [form, setForm] = useState({
@@ -64,6 +56,14 @@ export default function App() {
   }, [selectedSeason, currentPlayers]);
 
   useEffect(() => {
+    if (selectedSeason && seasons.includes(selectedSeason)) {
+      return;
+    }
+
+    setSelectedSeason(seasons[0] || "");
+  }, [seasons, selectedSeason]);
+
+  useEffect(() => {
     async function loadFromFirestore() {
       try {
         const docRef = doc(db, "korpenData", "app");
@@ -71,14 +71,21 @@ export default function App() {
 
         if (snapshot.exists()) {
           const data = snapshot.data();
-          if (data.seasons) setSeasons(data.seasons);
-          if (data.selectedSeason) setSelectedSeason(data.selectedSeason);
-          if (data.seasonData) setSeasonData(data.seasonData);
+          const loadedSeasons = Array.isArray(data.seasons) ? data.seasons : [];
+          const loadedSeasonData = data.seasonData && typeof data.seasonData === "object" ? data.seasonData : {};
+          const nextSelectedSeason =
+            typeof data.selectedSeason === "string" && loadedSeasons.includes(data.selectedSeason)
+              ? data.selectedSeason
+              : loadedSeasons[0] || "";
+
+          setSeasons(loadedSeasons);
+          setSelectedSeason(nextSelectedSeason);
+          setSeasonData(loadedSeasonData);
         } else {
           await setDoc(docRef, {
-            seasons: [defaultSeason],
-            selectedSeason: defaultSeason,
-            seasonData
+            seasons: [],
+            selectedSeason: "",
+            seasonData: {}
           });
         }
       } catch (loadError) {
@@ -102,10 +109,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !isAdmin && activeTab !== "stats") {
+    if (!authLoading && !showAdminControls && activeTab !== "stats") {
       setActiveTab("stats");
     }
-  }, [authLoading, isAdmin, activeTab]);
+  }, [authLoading, showAdminControls, activeTab]);
 
   useEffect(() => {
     if (!remoteLoaded) return;
@@ -160,7 +167,7 @@ export default function App() {
   });
 
   function addPlayer() {
-    if (!isAdmin) {
+    if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
       return;
     }
@@ -187,8 +194,12 @@ export default function App() {
   }
 
   function addNewPlayer() {
-    if (!isAdmin) {
+    if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
+      return;
+    }
+    if (!selectedSeason) {
+      setError("Lägg till en säsong först.");
       return;
     }
     if (!newPlayerName.trim()) return;
@@ -214,7 +225,7 @@ export default function App() {
   }
 
   function addSeason() {
-    if (!isAdmin) {
+    if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
       return;
     }
@@ -239,7 +250,7 @@ export default function App() {
   }
 
   function removeMatch(matchId) {
-    if (!isAdmin) {
+    if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
       return;
     }
@@ -260,7 +271,7 @@ export default function App() {
   }
 
   function removePlayer(index) {
-    if (!isAdmin) {
+    if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
       return;
     }
@@ -304,8 +315,13 @@ export default function App() {
   }
 
   function submitMatch() {
-    if (!isAdmin) {
+    if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
+      return;
+    }
+
+    if (!selectedSeason) {
+      setError("Lägg till en säsong först.");
       return;
     }
 
@@ -348,40 +364,22 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <div className="auth-bar">
-        {authLoading ? (
-          <div className="auth-status">Kontrollerar inloggning...</div>
-        ) : authUser ? (
-          <div className="auth-status">
-            Inloggad som <strong>{authUser.email}</strong>
-            {isAdmin ? " (admin)" : " (endast läsning)"}
-            <button type="button" className="button button-secondary" onClick={handleSignOut}>
-              Logga ut
-            </button>
-          </div>
-        ) : (
-          <form className="auth-form" onSubmit={handleSignIn}>
-            <input
-              className="input-field"
-              type="email"
-              placeholder="E-post"
-              value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)}
-            />
-            <input
-              className="input-field"
-              type="password"
-              placeholder="Lösenord"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-            />
-            <button type="submit" className="button button-primary">
-              Logga in
-            </button>
-            {authError && <div className="error-message">{authError}</div>}
-          </form>
-        )}
-      </div>
+      {isAdminRoute && (
+        <div className="auth-bar">
+          <Login
+            authLoading={authLoading}
+            authUser={authUser}
+            authError={authError}
+            authEmail={authEmail}
+            authPassword={authPassword}
+            setAuthEmail={setAuthEmail}
+            setAuthPassword={setAuthPassword}
+            handleSignIn={handleSignIn}
+            handleSignOut={handleSignOut}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
 
       <div className="season-bar">
         <div className="season-control">
@@ -391,7 +389,9 @@ export default function App() {
             className="input-field"
             value={selectedSeason}
             onChange={(e) => setSelectedSeason(e.target.value)}
+            disabled={!seasons.length}
           >
+            {!seasons.length && <option value="">Ingen säsong än</option>}
             {seasons.map((season) => (
               <option key={season} value={season}>
                 {season}
@@ -399,7 +399,7 @@ export default function App() {
             ))}
           </select>
         </div>
-        {isAdmin && (
+        {showAdminControls && (
           <div className="season-control season-add">
             <label htmlFor="new-season">Lägg till säsong</label>
             <div className="season-add-row">
@@ -435,7 +435,7 @@ export default function App() {
         >
           Stats
         </button>
-        {isAdmin && (
+        {showAdminControls && (
           <button
             className={activeTab === "add" ? "tab-button active" : "tab-button"}
             type="button"
@@ -444,7 +444,7 @@ export default function App() {
             Lägg till match
           </button>
         )}
-        {isAdmin && (
+        {showAdminControls && (
           <button
             className={activeTab === "players" ? "tab-button active" : "tab-button"}
             type="button"
@@ -501,7 +501,7 @@ export default function App() {
                     </div>
                     <div className="match-card-header-actions">
                       <div className="match-score">{match.result}</div>
-                      {isAdmin && (
+                      {showAdminControls && (
                         <button
                           type="button"
                           className="button button-text"
