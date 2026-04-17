@@ -581,6 +581,29 @@ button,
   flex: 1;
 }
 
+.auth-bar {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.auth-status {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 720px) {
   .season-bar {
     flex-direction: column;

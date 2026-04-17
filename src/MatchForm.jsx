@@ -1,3 +1,7 @@
+import { db } from "./firebase";
+import { collection, addDoc } from "firebase/firestore";
+
+
 export default function MatchForm({
   form,
   setForm,
@@ -185,5 +189,6 @@ export default function MatchForm({
         </button>
       </div>
     </section>
+    
   );
 }

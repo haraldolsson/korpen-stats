@@ -2,36 +2,19 @@ import { useEffect, useState } from "react";
 import { matches as initialMatches } from "./data";
 import MatchForm from "./MatchForm.jsx";
 import ActivePlayers from "./ActivePlayers.jsx";
+import Login from "./Login.jsx";
 import "./App.css";
+
+import { db } from "./firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
 export default function App() {
   const defaultSeason = "2026";
-  const [seasons, setSeasons] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("korpen-season-data");
-      if (saved) {
-        return JSON.parse(saved).seasons || [defaultSeason];
-      }
-    }
-    return [defaultSeason];
-  });
-  const [selectedSeason, setSelectedSeason] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("korpen-season-data");
-      if (saved) {
-        return JSON.parse(saved).selectedSeason || defaultSeason;
-      }
-    }
-    return defaultSeason;
-  });
+  const [seasons, setSeasons] = useState([defaultSeason]);
+  const [selectedSeason, setSelectedSeason] = useState(defaultSeason);
   const [seasonData, setSeasonData] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("korpen-season-data");
-      if (saved) {
-        return JSON.parse(saved).seasonData || {};
-      }
-    }
-
     const names = initialMatches.flatMap((match) => match.players.map((player) => player.name));
     const initialPlayers = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 
@@ -42,6 +25,13 @@ export default function App() {
       }
     };
   });
+  const [remoteLoaded, setRemoteLoaded] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const isAdmin = authUser?.email === "harald.billebjer@gmail.com";
   const [newSeasonName, setNewSeasonName] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [form, setForm] = useState({
@@ -72,6 +62,69 @@ export default function App() {
 
     setError("");
   }, [selectedSeason, currentPlayers]);
+
+  useEffect(() => {
+    async function loadFromFirestore() {
+      try {
+        const docRef = doc(db, "korpenData", "app");
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data.seasons) setSeasons(data.seasons);
+          if (data.selectedSeason) setSelectedSeason(data.selectedSeason);
+          if (data.seasonData) setSeasonData(data.seasonData);
+        } else {
+          await setDoc(docRef, {
+            seasons: [defaultSeason],
+            selectedSeason: defaultSeason,
+            seasonData
+          });
+        }
+      } catch (loadError) {
+        console.error("Firebase load error:", loadError);
+      } finally {
+        setRemoteLoaded(true);
+      }
+    }
+
+    loadFromFirestore();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(getAuth(), (user) => {
+      setAuthUser(user);
+      setAuthLoading(false);
+      if (user) setAuthError("");
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin && activeTab !== "stats") {
+      setActiveTab("stats");
+    }
+  }, [authLoading, isAdmin, activeTab]);
+
+  useEffect(() => {
+    if (!remoteLoaded) return;
+
+    async function saveToFirestore() {
+      try {
+        const docRef = doc(db, "korpenData", "app");
+        await setDoc(docRef, {
+          seasons,
+          selectedSeason,
+          seasonData
+        });
+      } catch (saveError) {
+        console.error("Firebase save error:", saveError);
+      }
+    }
+
+    saveToFirestore();
+  }, [seasons, selectedSeason, seasonData, remoteLoaded]);
 
   function calculateStats(matches) {
     const stats = {};
@@ -107,6 +160,10 @@ export default function App() {
   });
 
   function addPlayer() {
+    if (!isAdmin) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
     if (!playerInput.name || !currentPlayers.includes(playerInput.name)) return;
     if (form.players.some((player) => player.name === playerInput.name)) {
       setError("Spelaren finns redan i matchen.");
@@ -130,6 +187,10 @@ export default function App() {
   }
 
   function addNewPlayer() {
+    if (!isAdmin) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
     if (!newPlayerName.trim()) return;
     const normalized = newPlayerName.trim();
     if (currentPlayers.includes(normalized)) {
@@ -153,6 +214,10 @@ export default function App() {
   }
 
   function addSeason() {
+    if (!isAdmin) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
     if (!newSeasonName.trim()) return;
     const normalized = newSeasonName.trim();
     if (seasons.includes(normalized)) {
@@ -174,6 +239,10 @@ export default function App() {
   }
 
   function removeMatch(matchId) {
+    if (!isAdmin) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
     setSeasonData((prev) => ({
       ...prev,
       [selectedSeason]: {
@@ -191,10 +260,33 @@ export default function App() {
   }
 
   function removePlayer(index) {
+    if (!isAdmin) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       players: prev.players.filter((_, i) => i !== index)
     }));
+  }
+
+  function handleSignIn(event) {
+    event.preventDefault();
+    setAuthError("");
+
+    signInWithEmailAndPassword(getAuth(), authEmail, authPassword).catch((signInError) => {
+      console.error("Sign-in error", signInError);
+      setAuthError("Fel e-post eller lösenord.");
+    });
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut(getAuth());
+    } catch (signOutError) {
+      console.error("Sign-out error", signOutError);
+    }
   }
 
   function getMatchOutcome(match) {
@@ -212,6 +304,11 @@ export default function App() {
   }
 
   function submitMatch() {
+    if (!isAdmin) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
+
     if (!form.opponent.trim() || !form.date) {
       setError("Fyll i motståndare och datum.");
       return;
@@ -247,18 +344,45 @@ export default function App() {
     setError("");
   }
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        "korpen-season-data",
-        JSON.stringify({ seasons, selectedSeason, seasonData })
-      );
-    }
-  }, [seasons, selectedSeason, seasonData]);
 
 
   return (
     <div className="app-container">
+      <div className="auth-bar">
+        {authLoading ? (
+          <div className="auth-status">Kontrollerar inloggning...</div>
+        ) : authUser ? (
+          <div className="auth-status">
+            Inloggad som <strong>{authUser.email}</strong>
+            {isAdmin ? " (admin)" : " (endast läsning)"}
+            <button type="button" className="button button-secondary" onClick={handleSignOut}>
+              Logga ut
+            </button>
+          </div>
+        ) : (
+          <form className="auth-form" onSubmit={handleSignIn}>
+            <input
+              className="input-field"
+              type="email"
+              placeholder="E-post"
+              value={authEmail}
+              onChange={(e) => setAuthEmail(e.target.value)}
+            />
+            <input
+              className="input-field"
+              type="password"
+              placeholder="Lösenord"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+            />
+            <button type="submit" className="button button-primary">
+              Logga in
+            </button>
+            {authError && <div className="error-message">{authError}</div>}
+          </form>
+        )}
+      </div>
+
       <div className="season-bar">
         <div className="season-control">
           <label htmlFor="season-select">Säsong</label>
@@ -275,22 +399,24 @@ export default function App() {
             ))}
           </select>
         </div>
-        <div className="season-control season-add">
-          <label htmlFor="new-season">Lägg till säsong</label>
-          <div className="season-add-row">
-            <input
-              id="new-season"
-              className="input-field"
-              type="text"
-              value={newSeasonName}
-              onChange={(e) => setNewSeasonName(e.target.value)}
-              placeholder="Lägg till ny säsong"
-            />
-            <button type="button" className="button" onClick={addSeason}>
-              Lägg till
-            </button>
+        {isAdmin && (
+          <div className="season-control season-add">
+            <label htmlFor="new-season">Lägg till säsong</label>
+            <div className="season-add-row">
+              <input
+                id="new-season"
+                className="input-field"
+                type="text"
+                value={newSeasonName}
+                onChange={(e) => setNewSeasonName(e.target.value)}
+                placeholder="Lägg till ny säsong"
+              />
+              <button type="button" className="button" onClick={addSeason}>
+                Lägg till
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <header className="hero-header">
@@ -309,20 +435,24 @@ export default function App() {
         >
           Stats
         </button>
-        <button
-          className={activeTab === "add" ? "tab-button active" : "tab-button"}
-          type="button"
-          onClick={() => setActiveTab("add")}
-        >
-          Lägg till match
-        </button>
-        <button
-          className={activeTab === "players" ? "tab-button active" : "tab-button"}
-          type="button"
-          onClick={() => setActiveTab("players")}
-        >
-          Spelare
-        </button>
+        {isAdmin && (
+          <button
+            className={activeTab === "add" ? "tab-button active" : "tab-button"}
+            type="button"
+            onClick={() => setActiveTab("add")}
+          >
+            Lägg till match
+          </button>
+        )}
+        {isAdmin && (
+          <button
+            className={activeTab === "players" ? "tab-button active" : "tab-button"}
+            type="button"
+            onClick={() => setActiveTab("players")}
+          >
+            Spelare
+          </button>
+        )}
       </div>
 
       {activeTab === "stats" ? (
@@ -371,13 +501,15 @@ export default function App() {
                     </div>
                     <div className="match-card-header-actions">
                       <div className="match-score">{match.result}</div>
-                      <button
-                        type="button"
-                        className="button button-text"
-                        onClick={() => removeMatch(match.id)}
-                      >
-                        Ta bort
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="button button-text"
+                          onClick={() => removeMatch(match.id)}
+                        >
+                          Ta bort
+                        </button>
+                      )}
                     </div>
                   </div>
                   <ul className="match-player-list">
@@ -416,5 +548,6 @@ export default function App() {
         />
       )}
     </div>
+    
   );
 }
