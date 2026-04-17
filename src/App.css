@@ -542,7 +542,7 @@ button,
 .tab-nav {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -615,6 +615,12 @@ button,
   .season-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .season-control {
+    gap: 6px;
   }
 
   .hero-header {
@@ -637,10 +643,12 @@ button,
 
   .tab-nav {
     width: 100%;
+    gap: 8px;
+    margin-bottom: 16px;
   }
 
   .tab-button {
-    flex: 1 1 calc(50% - 12px);
+    flex: 1 1 calc(50% - 8px);
     text-align: center;
   }
 
