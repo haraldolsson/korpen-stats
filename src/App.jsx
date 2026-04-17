@@ -9,6 +9,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
+const EMPTY_SEASON = { matches: [], players: [] };
+
 export default function App() {
   const [seasons, setSeasons] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState("");
@@ -41,19 +43,22 @@ export default function App() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("stats");
 
-  const currentSeason = seasonData[selectedSeason] || { matches: [], players: [] };
-  const currentMatches = currentSeason.matches || [];
-  const currentPlayers = currentSeason.players || [];
+  const currentSeason = seasonData[selectedSeason] || EMPTY_SEASON;
+  const currentMatches = currentSeason.matches || EMPTY_SEASON.matches;
+  const currentPlayers = currentSeason.players || EMPTY_SEASON.players;
 
   useEffect(() => {
-    setForm((prev) => ({ ...prev, players: [] }));
+    setForm((prev) => (prev.players.length ? { ...prev, players: [] } : prev));
 
     if (!currentPlayers.includes(playerInput.name)) {
-      setPlayerInput((prev) => ({ ...prev, name: currentPlayers[0] || "" }));
+      setPlayerInput((prev) => {
+        const nextName = currentPlayers[0] || "";
+        return prev.name === nextName ? prev : { ...prev, name: nextName };
+      });
     }
 
     setError("");
-  }, [selectedSeason, currentPlayers]);
+  }, [selectedSeason, currentPlayers, playerInput.name]);
 
   useEffect(() => {
     if (selectedSeason && seasons.includes(selectedSeason)) {
