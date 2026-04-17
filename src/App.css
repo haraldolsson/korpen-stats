@@ -209,9 +209,9 @@ html {
   flex-direction: column;
   text-align: center;
   gap: 10px;
-  margin: 0 -24px 28px;
-  padding: 42px 24px 32px;
-  min-height: 24vh;
+  margin: 0 -24px 16px;
+  padding: 28px 24px 20px;
+  min-height: auto;
   border-radius: 0;
   border: none;
   background: transparent;
@@ -559,8 +559,8 @@ button,
 
 .season-bar {
   display: flex;
-  gap: 20px;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin: 0 0 18px;
   flex-wrap: wrap;
   align-items: flex-end;
 }

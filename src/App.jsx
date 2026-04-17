@@ -381,6 +381,14 @@ export default function App() {
         </div>
       )}
 
+      <header className="hero-header">
+        <div>
+          <p className="eyebrow">Korpen Stats</p>
+          <h1 className="app-title">Manchester Kavaj</h1>
+          <p className="intro-text">Stats för Manchester Kavaj i Korpen.</p>
+        </div>
+      </header>
+
       <div className="season-bar">
         <div className="season-control">
           <label htmlFor="season-select">Säsong</label>
@@ -418,14 +426,6 @@ export default function App() {
           </div>
         )}
       </div>
-
-      <header className="hero-header">
-        <div>
-          <p className="eyebrow">Korpen Stats</p>
-          <h1 className="app-title">Manchester Kavaj</h1>
-          <p className="intro-text">Stats för Manchester Kavaj i Korpen.</p>
-        </div>
-      </header>
 
       <div className="tab-nav">
         <button
