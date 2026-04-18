@@ -51,16 +51,19 @@ export default function App() {
 
   useEffect(() => {
     setForm((prev) => (prev.players.length ? { ...prev, players: [] } : prev));
-
-    if (!currentPlayers.includes(playerInput.name)) {
-      setPlayerInput((prev) => {
-        const nextName = currentPlayers[0] || "";
-        return prev.name === nextName ? prev : { ...prev, name: nextName };
-      });
-    }
-
     setError("");
-  }, [selectedSeason, currentPlayers, playerInput.name]);
+  }, [selectedSeason]);
+
+  useEffect(() => {
+    setPlayerInput((prev) => {
+      if (currentPlayers.includes(prev.name)) {
+        return prev;
+      }
+
+      const nextName = currentPlayers[0] || "";
+      return prev.name === nextName ? prev : { ...prev, name: nextName };
+    });
+  }, [currentPlayers]);
 
   useEffect(() => {
     if (selectedSeason && seasons.includes(selectedSeason)) {
