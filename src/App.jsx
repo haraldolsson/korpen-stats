@@ -11,7 +11,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
-const EMPTY_SEASON = { matches: [], players: [] };
+const EMPTY_SEASON = { matches: [], players: [], playerImages: {} };
 
 export default function App() {
   const [seasons, setSeasons] = useState([]);
@@ -31,6 +31,7 @@ export default function App() {
   const showAdminControls = isAdminRoute && isAdmin;
   const [newSeasonName, setNewSeasonName] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerImage, setNewPlayerImage] = useState("");
   const [form, setForm] = useState({
     opponent: "",
     date: "",
@@ -49,9 +50,11 @@ export default function App() {
   const currentSeason = seasonData[selectedSeason] || EMPTY_SEASON;
   const currentMatches = currentSeason.matches || EMPTY_SEASON.matches;
   const currentPlayers = currentSeason.players || EMPTY_SEASON.players;
+  const currentPlayerImages = currentSeason.playerImages || EMPTY_SEASON.playerImages;
 
   useEffect(() => {
     setForm((prev) => (prev.players.length ? { ...prev, players: [] } : prev));
+    setNewPlayerImage("");
     setError("");
   }, [selectedSeason]);
 
@@ -144,6 +147,41 @@ export default function App() {
     saveToFirestore();
   }, [seasons, selectedSeason, seasonData, remoteLoaded]);
 
+  function handleNewPlayerImageChange(event) {
+    setNewPlayerImage(event.target.value);
+    setError("");
+  }
+
+  function updatePlayerImage(playerName, imagePath) {
+    if (!showAdminControls) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
+    if (!selectedSeason) {
+      return;
+    }
+
+    setSeasonData((prev) => {
+      const season = prev[selectedSeason] || EMPTY_SEASON;
+      const nextImages = { ...(season.playerImages || {}) };
+
+      if (imagePath) {
+        nextImages[playerName] = imagePath;
+      } else {
+        delete nextImages[playerName];
+      }
+
+      return {
+        ...prev,
+        [selectedSeason]: {
+          ...season,
+          playerImages: nextImages
+        }
+      };
+    });
+    setError("");
+  }
+
   function calculateStats(matches) {
     const stats = {};
 
@@ -224,10 +262,17 @@ export default function App() {
       ...prev,
       [selectedSeason]: {
         ...prev[selectedSeason],
-        players: [...(prev[selectedSeason]?.players || []), normalized].sort((a, b) => a.localeCompare(b))
+        players: [...(prev[selectedSeason]?.players || []), normalized].sort((a, b) => a.localeCompare(b)),
+        playerImages: newPlayerImage
+          ? {
+              ...(prev[selectedSeason]?.playerImages || {}),
+              [normalized]: newPlayerImage
+            }
+          : (prev[selectedSeason]?.playerImages || {})
       }
     }));
     setNewPlayerName("");
+    setNewPlayerImage("");
     setError("");
     setPlayerInput((prev) => ({
       ...prev,
@@ -245,13 +290,20 @@ export default function App() {
       return;
     }
 
-    setSeasonData((prev) => ({
-      ...prev,
-      [selectedSeason]: {
-        ...prev[selectedSeason],
-        players: (prev[selectedSeason]?.players || []).filter((player) => player !== playerName)
-      }
-    }));
+    setSeasonData((prev) => {
+      const season = prev[selectedSeason] || EMPTY_SEASON;
+      const { [playerName]: removedImage, ...remainingImages } = season.playerImages || {};
+      void removedImage;
+
+      return {
+        ...prev,
+        [selectedSeason]: {
+          ...season,
+          players: (season.players || []).filter((player) => player !== playerName),
+          playerImages: remainingImages
+        }
+      };
+    });
     setForm((prev) => ({
       ...prev,
       players: prev.players.filter((player) => player.name !== playerName)
@@ -277,7 +329,8 @@ export default function App() {
       ...prev,
       [normalized]: {
         matches: [],
-        players: []
+        players: [],
+        playerImages: {}
       }
     }));
     setSelectedSeason(normalized);
@@ -540,9 +593,13 @@ export default function App() {
       ) : (
         <ActivePlayers
           players={currentPlayers}
+          playerImages={currentPlayerImages}
           newPlayerName={newPlayerName}
+          newPlayerImage={newPlayerImage}
           setNewPlayerName={setNewPlayerName}
           addNewPlayer={addNewPlayer}
+          handleNewPlayerImageChange={handleNewPlayerImageChange}
+          updatePlayerImage={updatePlayerImage}
           removeActivePlayer={removeActivePlayer}
           error={error}
         />

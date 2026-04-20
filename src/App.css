@@ -405,12 +405,63 @@ button,
 
 .player-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: center;
   padding: 14px 16px;
   border-radius: 16px;
   background: var(--code-bg);
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.player-select-row {
+  display: grid;
+  gap: 8px;
+}
+
+.player-select-label {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.player-image-select {
+  min-width: 180px;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.player-image-preview {
+  padding: 16px 18px;
+}
+
+.player-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(170, 59, 255, 0.22);
+  background: rgba(170, 59, 255, 0.08);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.player-name {
+  font-weight: 700;
+  color: var(--text-h);
 }
 
 .player-stats {
