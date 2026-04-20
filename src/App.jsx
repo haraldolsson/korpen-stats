@@ -26,6 +26,7 @@ export default function App() {
   const normalizedPath =
     typeof window !== "undefined" ? window.location.pathname.replace(/\/+$/, "") || "/" : "/";
   const isAdminRoute = normalizedPath === "/admin";
+  const isKnownRoute = ["/", "/admin"].includes(normalizedPath);
   const isAdmin = authUser?.email === "harald.billebjer@gmail.com";
   const showAdminControls = isAdminRoute && isAdmin;
   const [newSeasonName, setNewSeasonName] = useState("");
@@ -234,6 +235,31 @@ export default function App() {
     }));
   }
 
+  function removeActivePlayer(playerName) {
+    if (!showAdminControls) {
+      setError("Endast admin kan göra ändringar.");
+      return;
+    }
+    if (!selectedSeason) {
+      setError("Välj en säsong först.");
+      return;
+    }
+
+    setSeasonData((prev) => ({
+      ...prev,
+      [selectedSeason]: {
+        ...prev[selectedSeason],
+        players: (prev[selectedSeason]?.players || []).filter((player) => player !== playerName)
+      }
+    }));
+    setForm((prev) => ({
+      ...prev,
+      players: prev.players.filter((player) => player.name !== playerName)
+    }));
+    setPlayerInput((prev) => (prev.name === playerName ? { ...prev, name: "" } : prev));
+    setError("");
+  }
+
   function addSeason() {
     if (!showAdminControls) {
       setError("Endast admin kan göra ändringar.");
@@ -370,7 +396,24 @@ export default function App() {
     setError("");
   }
 
-
+  if (!isKnownRoute) {
+    return (
+      <div className="app-container">
+        <header className="hero-header">
+          <div>
+            <p className="eyebrow">404</p>
+            <h1 className="app-title">Sidan finns inte</h1>
+            <p className="intro-text">Länken du försökte öppna verkar inte finnas.</p>
+            <p style={{ marginTop: "16px" }}>
+              <a className="button" href="/">
+                Till startsidan
+              </a>
+            </p>
+          </div>
+        </header>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -500,6 +543,7 @@ export default function App() {
           newPlayerName={newPlayerName}
           setNewPlayerName={setNewPlayerName}
           addNewPlayer={addNewPlayer}
+          removeActivePlayer={removeActivePlayer}
           error={error}
         />
       )}

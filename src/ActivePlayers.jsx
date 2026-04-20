@@ -3,6 +3,7 @@ export default function ActivePlayers({
   newPlayerName,
   setNewPlayerName,
   addNewPlayer,
+  removeActivePlayer,
   error
 }) {
   return (
@@ -10,7 +11,7 @@ export default function ActivePlayers({
       <div className="panel-heading panel-heading-center">
         <div>
           <h2>Spelare</h2>
-          <p className="panel-subtitle">Lägg till en aktiv spelare.</p>
+          <p className="panel-subtitle">Lägg till eller ta bort aktiva spelare.</p>
         </div>
       </div>
 
@@ -35,6 +36,13 @@ export default function ActivePlayers({
               {players.map((player) => (
                 <li key={player} className="player-item">
                   <span>{player}</span>
+                  <button
+                    type="button"
+                    className="button button-text"
+                    onClick={() => removeActivePlayer(player)}
+                  >
+                    Ta bort
+                  </button>
                 </li>
               ))}
             </ul>
