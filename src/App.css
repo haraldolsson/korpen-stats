@@ -563,9 +563,26 @@ button,
 .match-player-list li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   padding: 12px 14px;
   border-radius: 16px;
   background: rgba(170, 59, 255, 0.04);
+}
+
+.match-player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.match-player-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(170, 59, 255, 0.18);
+  background: rgba(170, 59, 255, 0.08);
 }
 
 @media (max-width: 900px) {

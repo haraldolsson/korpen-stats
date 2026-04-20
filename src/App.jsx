@@ -576,6 +576,7 @@ export default function App() {
           getMatchOutcome={getMatchOutcome}
           showAdminControls={showAdminControls}
           removeMatch={removeMatch}
+          playerImages={currentPlayerImages}
         />
       ) : activeTab === "add" ? (
         <MatchForm
